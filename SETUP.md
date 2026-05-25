@@ -1,88 +1,99 @@
 # Renovation Tracker - Setup Guide
 
-## Stap 1: Supabase Account (5 min)
+## Stap 1: Supabase Project (5 min)
 
 1. Ga naar https://supabase.com
 2. Klik "Start your project"
-3. Meld je aan met Google/GitHub/Email
-4. Maak een nieuw project aan
-5. Vul in de Project Settings:
-   - **URL**: Copy naar `.env.local` als `NEXT_PUBLIC_SUPABASE_URL`
-   - **Anon Key**: Copy naar `.env.local` als `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. Meld je aan (Google/GitHub/Email)
+4. Maak project aan:
+   - **Project name:** "renovation-app"
+   - **Database password:** sterk wachtwoord (save dit!)
+   - **Region:** Europe (Brussel)
+5. ✅ Wacht tot project klaar is
 
-## Stap 2: Database Setup (2 min)
+## Stap 2: Database Schema Setup (3 min)
 
-1. In Supabase Dashboard, ga naar SQL Editor
-2. Klik "New Query"
-3. Copy-paste de inhoud van `supabase/schema.sql`
-4. Klik "Run"
-5. Done! Database is klaar
+1. In Supabase Dashboard → **SQL Editor**
+2. Klik **"New Query"**
+3. Copy-paste alles uit `supabase/schema.sql`
+4. Klik **"Run"**
+5. ✅ "Execution completed" bericht verschijnt
 
-## Stap 3: Vercel Account (3 min)
+## Stap 3: API Keys Kopieren (2 min)
 
-1. Ga naar https://vercel.com
-2. Meld je aan met GitHub/Google
-3. Klik "New Project"
-4. Selecteer je GitHub repository (na git push)
+1. Ga naar **Settings → API**
+2. Copy beide:
+   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+   - **Anon Key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. Sla deze veilig op (je hebt ze zo nodig)
 
-## Stap 4: Lokaal Opzetten
+## Stap 4: Lokaal Testen (5 min)
 
 ```bash
-# Clone of download deze folder
-cd renovation-app
-
-# Install dependencies
 npm install
-
-# Copy .env.example naar .env.local en vul je Supabase keys in
 cp .env.example .env.local
-
-# Start development server
+# Vul je Supabase keys in .env.local
 npm run dev
 ```
 
-Bezoek http://localhost:3000 - klaar!
+Bezoek http://localhost:3000 → Login pagina moet zichtbaar zijn ✅
 
-## Stap 5: Pushen naar GitHub & Vercel
+## Stap 5: Vercel Deployment (10 min)
 
-```bash
-# Initialize git repo
-git init
-git add .
-git commit -m "Initial commit"
+1. Zet code op GitHub (al gedaan!)
+2. Ga naar https://vercel.com
+3. Klik "New Project" → "Import Git Repository"
+4. Selecteer: `Yoel001/renovation-tracker`
+5. Environment Variables toevoegen:
+   - `NEXT_PUBLIC_SUPABASE_URL` = [jouw URL]
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = [jouw key]
+6. Klik "Deploy"
+7. ✅ Wacht ~2-3 minuten op live URL
 
-# Push naar GitHub (maak repo eerst aan op github.com)
-git remote add origin https://github.com/jouw-username/renovation-tracker.git
-git push -u origin main
-```
+## Stap 6: Supabase Auth Settings (2 min)
 
-Dan in Vercel:
-1. Klik "Import Project"
-2. Selecteer je GitHub repo
-3. Vercel vraagt Environment Variables
-4. Voeg `NEXT_PUBLIC_SUPABASE_URL` en `NEXT_PUBLIC_SUPABASE_ANON_KEY` in
-5. Klik "Deploy"
+In Supabase → **Settings → Authentication**:
+1. Scroll naar "Redirect URLs"
+2. Voeg je Vercel URL toe:
+   ```
+   https://your-vercel-url.vercel.app
+   ```
+3. Save ✅
 
-Done! 🚀 Je app is live!
+## Stap 7: Multi-User Setup
 
-## Multi-user Setup
+1. **Jij:** Account aanmaken op live app
+   - Email: `yoel.casal@gmail.com`
+   - Wachtwoord: zelf kiezen
+   
+2. **Huismate:** Account aanmaken
+   - Email: `lahaye.celine@hotmail.com`
+   - Wachtwoord: zelf kiezen
 
-### Jijzelf + Huismate toevoegen:
+3. **Delen aktiveren:**
+   - In app → "Delen met huismate"
+   - Email: `lahaye.celine@hotmail.com`
+   - ✅ Real-time sync!
 
-1. Zelf account maken: Registreer op je eigen app
-2. Huismate email uitnodigen via "Delen met huismate" knop in de app
-3. Huismate maakt account aan
-4. Bij inloggen ziet huismate jouw renovaties (shared access)
+## Troubleshooting
 
-## Problemen?
+**"Invalid API key"**
+- Check je Supabase keys in Vercel
+- Zorg dat beide vars ingesteld zijn
+- Redeploy Vercel
 
-**"NEXTAUTH_SECRET missing"** 
-→ Dit zit niet in deze versie (we gebruiken Supabase auth)
+**"Could not find table 'public.shared_access'"**
+- Run het SQL script in Supabase SQL Editor
+- Zorg dat "Execution completed" verschijnt
 
-**"Database connection failed"**
-→ Check je `.env.local` keys in Supabase
+**"Redirect URL not allowed"**
+- Voeg je Vercel URL toe in Supabase → Settings → Authentication
+- Redirect URLs moeten exact matchen
 
-**"Vercel build fails"**
-→ Zorg dat alle dependencies in `package.json` staan
+## Gratis Kosten
 
-Stel gerust vragen! 🏠
+✅ Vercel: gratis tier (unlimited deploys)
+✅ Supabase: gratis tier (1 project, 500MB DB)
+✅ GitHub: gratis (public repo)
+
+**Total: €0,00/maand** 🎉

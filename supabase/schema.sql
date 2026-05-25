@@ -16,9 +16,19 @@ create table if not exists renovations (
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Create RLS policies
-alter table renovations enable row level security;
+-- Create shared_access table voor 2-persoons access
+create table if not exists shared_access (
+  id uuid default uuid_generate_v4() primary key,
+  owner_id uuid references auth.users(id) on delete cascade,
+  shared_with_email text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
 
+-- Enable Row Level Security
+alter table renovations enable row level security;
+alter table shared_access enable row level security;
+
+-- Renovations RLS Policies
 create policy "Users can view own renovations"
   on renovations for select
   using (auth.uid() = user_id);
@@ -35,30 +45,16 @@ create policy "Users can delete own renovations"
   on renovations for delete
   using (auth.uid() = user_id);
 
--- Create shared_access table voor 2-persoons access
-create table if not exists shared_access (
-  id uuid default uuid_generate_v4() primary key,
-  owner_id uuid references auth.users(id) on delete cascade,
-  shared_with_email text not null,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
-alter table shared_access enable row level security;
-
+-- Shared Access RLS Policies
 create policy "Users can view own shares"
   on shared_access for select
-  using (auth.uid() = owner_id or auth.email() = shared_with_email);
+  using (auth.uid() = owner_id);
 
--- Create view for shared renovations
-create or replace view shared_renovations as
-select r.*
-from renovations r
-join shared_access sa on (r.user_id = sa.owner_id or r.user_id = (
-  select user_id from auth.users where email = sa.shared_with_email
-))
-where sa.shared_with_email = auth.email() or sa.owner_id = auth.uid();
+create policy "Users can create shares"
+  on shared_access for insert
+  with check (auth.uid() = owner_id);
 
--- Create function to handle updated_at
+-- Updated_at trigger function
 create or replace function handle_updated_at()
 returns trigger as $$
 begin
@@ -67,7 +63,7 @@ begin
 end;
 $$ language plpgsql;
 
--- Create trigger
+-- Apply trigger to renovations
 create trigger handle_renovations_updated_at
   before update on renovations
   for each row
