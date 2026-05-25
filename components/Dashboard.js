@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import RenovationForm from './RenovationForm'
-import RenovationsList from './RenovationsList'
+import RoomOverview from './RoomOverview'
 import DashboardStats from './DashboardStats'
 import styles from './Dashboard.module.css'
 
@@ -173,13 +173,13 @@ export default function Dashboard({ user }) {
           </div>
 
           <div className={styles.listSection}>
-            <h2>Renovaties</h2>
+            <h2>Overzicht per ruimte</h2>
             {loading ? (
               <p>Laden...</p>
             ) : renovations.length === 0 ? (
               <p style={{ color: '#999' }}>Nog geen renovaties. Voeg er een toe!</p>
             ) : (
-              <RenovationsList
+              <RoomOverview
                 renovations={renovations}
                 onDelete={handleDeleteRenovation}
               />
