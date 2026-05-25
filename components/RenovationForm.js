@@ -115,12 +115,12 @@ export default function RenovationForm({ onSubmit }) {
         </div>
         <div>
           <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '500' }}>
-            Startdatum
+            Startdatum (optioneel)
           </label>
           <input
             type="date"
             value={formData.start_date}
-            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value || null })}
           />
         </div>
       </div>
