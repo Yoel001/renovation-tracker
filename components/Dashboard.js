@@ -14,131 +14,122 @@ export default function Dashboard({ user }) {
 
   useEffect(() => {
     loadData()
-    
     const subscription = supabase
       .channel('changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'renovations' }, loadData)
       .subscribe()
-
-    return () => {
-      subscription.unsubscribe()
-    }
+    return () => subscription.unsubscribe()
   }, [])
 
   const loadData = async () => {
     setLoading(true)
     try {
-      const [roomsData, renovationsData] = await Promise.all([
-        supabase.from('rooms').select('*').eq('user_id', user.id),
-        supabase.from('renovations').select('*').eq('user_id', user.id),
+      const [roomsRes, renosRes] = await Promise.all([
+        supabase.from('rooms').select('*').eq('user_id', user.id).order('created_at'),
+        supabase.from('renovations').select('*').eq('user_id', user.id).order('created_at'),
       ])
-      
-      if (roomsData.error) throw roomsData.error
-      if (renovationsData.error) throw renovationsData.error
-      
-      setRooms(roomsData.data || [])
-      setRenovations(renovationsData.data || [])
-    } catch (error) {
-      console.error('Error loading data:', error)
+      if (roomsRes.error) throw roomsRes.error
+      if (renosRes.error) throw renosRes.error
+      setRooms(roomsRes.data || [])
+      setRenovations(renosRes.data || [])
+    } catch (e) {
+      console.error(e)
     } finally {
       setLoading(false)
     }
   }
 
   const handleAddRoom = async (name) => {
-    try {
-      const { error } = await supabase.from('rooms').insert([{
-        name,
-        user_id: user.id,
-      }])
-      if (error) throw error
-      await loadData()
-    } catch (error) {
-      alert('Fout: ' + error.message)
-    }
+    const { error } = await supabase.from('rooms').insert([{ name, user_id: user.id }])
+    if (error) alert('Fout: ' + error.message)
+    else await loadData()
   }
 
-  const handleDeleteRoom = async (roomId) => {
-    if (!confirm('Zeker weten? Alle renovaties in deze ruimte worden verwijderd.')) return
-    try {
-      const { error } = await supabase.from('rooms').delete().eq('id', roomId)
-      if (error) throw error
-      await loadData()
-    } catch (error) {
-      alert('Fout: ' + error.message)
-    }
+  const handleDeleteRoom = async (id) => {
+    if (!confirm('Zeker weten? Alle renovaties worden mee verwijderd.')) return
+    const { error } = await supabase.from('rooms').delete().eq('id', id)
+    if (error) alert('Fout: ' + error.message)
+    else await loadData()
   }
 
-  const handleAddRenovation = async (roomId, formData) => {
-    try {
-      const { error } = await supabase.from('renovations').insert([{
-        room_id: roomId,
-        user_id: user.id,
-        renovation_type: formData.renovation_type,
-        cost: parseFloat(formData.cost),
-        status: formData.status,
-        start_date: formData.start_date || null,
-        notes: formData.notes || null,
-      }])
-      if (error) throw error
-      await loadData()
-    } catch (error) {
-      alert('Fout: ' + error.message)
-    }
+  const handleRenameRoom = async (id, name) => {
+    const { error } = await supabase.from('rooms').update({ name }).eq('id', id)
+    if (error) alert('Fout: ' + error.message)
+    else await loadData()
   }
 
-  const handleDeleteRenovation = async (renovationId) => {
+  const handleAddRenovation = async (roomId, form) => {
+    const { error } = await supabase.from('renovations').insert([{
+      room_id: roomId,
+      user_id: user.id,
+      renovation_type: form.renovation_type,
+      cost: parseFloat(form.cost),
+      status: form.status,
+      start_date: form.start_date || null,
+      notes: form.notes || null,
+      urls: form.urls.filter(u => u.trim() !== ''),
+    }])
+    if (error) alert('Fout: ' + error.message)
+    else await loadData()
+  }
+
+  const handleDeleteRenovation = async (id) => {
     if (!confirm('Verwijderen?')) return
-    try {
-      const { error } = await supabase.from('renovations').delete().eq('id', renovationId)
-      if (error) throw error
-      await loadData()
-    } catch (error) {
-      alert('Fout: ' + error.message)
-    }
+    const { error } = await supabase.from('renovations').delete().eq('id', id)
+    if (error) alert('Fout: ' + error.message)
+    else await loadData()
+  }
+
+  const handleUpdateRenovation = async (id, form) => {
+    const { error } = await supabase.from('renovations').update({
+      renovation_type: form.renovation_type,
+      cost: parseFloat(form.cost),
+      status: form.status,
+      start_date: form.start_date || null,
+      notes: form.notes || null,
+      urls: form.urls.filter(u => u.trim() !== ''),
+    }).eq('id', id)
+    if (error) alert('Fout: ' + error.message)
+    else await loadData()
   }
 
   const handleShare = async (e) => {
     e.preventDefault()
-    try {
-      const { error } = await supabase.from('shared_access').insert([{
-        owner_id: user.id,
-        shared_with_email: sharedEmail,
-      }])
-      if (error) throw error
-      setShareMessage(`Gedeeld met ${sharedEmail}! 🎉`)
+    const { error } = await supabase.from('shared_access').insert([{ owner_id: user.id, shared_with_email: sharedEmail }])
+    if (error) { setShareMessage('Fout: ' + error.message) }
+    else {
+      setShareMessage(`Gedeeld met ${sharedEmail}!`)
       setSharedEmail('')
       setTimeout(() => setShareMessage(''), 3000)
-    } catch (error) {
-      setShareMessage('Fout: ' + error.message)
     }
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-  }
+  // Stats
+  const totalCost = renovations.reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
+  const doneCost = renovations.filter(r => r.status === 'Afgerond').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
+  const plannedCost = renovations.filter(r => r.status !== 'Afgerond').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
 
-  const totalCost = renovations.reduce((sum, r) => sum + (parseFloat(r.cost) || 0), 0)
+  const StatCard = ({ label, value }) => (
+    <div style={{ border: '1px solid #000', padding: '16px 20px' }}>
+      <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.8px', textTransform: 'uppercase', color: '#555', marginBottom: '6px' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>
+        €{Math.round(value).toLocaleString()}
+      </div>
+    </div>
+  )
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1>🏠 Renovation Tracker</h1>
+        <h1>Renovation Tracker</h1>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <span style={{ fontSize: '14px', color: '#666' }}>
-            {user.email}
-          </span>
+          <span style={{ fontSize: '12px', color: '#666' }}>{user.email}</span>
           <button
-            onClick={handleLogout}
-            style={{
-              backgroundColor: '#f0f0f0',
-              color: '#333',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
+            onClick={() => supabase.auth.signOut()}
+            style={{ background: '#fff', border: '1px solid #000', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}
           >
             Uitloggen
           </button>
@@ -146,63 +137,73 @@ export default function Dashboard({ user }) {
       </header>
 
       <main className={styles.main}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: '12px',
-          marginBottom: '24px',
-        }}>
-          <div style={{ background: '#e6f1fb', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>Totale kosten</div>
-            <div style={{ fontSize: '20px', fontWeight: '600', color: '#185fa5' }}>
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0', marginBottom: '32px', border: '1px solid #000' }}>
+          <div style={{ borderRight: '1px solid #000', padding: '16px 20px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.8px', textTransform: 'uppercase', color: '#555', marginBottom: '6px' }}>
+              Totaal geraamd
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>
               €{Math.round(totalCost).toLocaleString()}
             </div>
           </div>
-          <div style={{ background: '#faeeda', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>Ruimtes</div>
-            <div style={{ fontSize: '20px', fontWeight: '600', color: '#ba7517' }}>{rooms.length}</div>
+          <div style={{ borderRight: '1px solid #000', padding: '16px 20px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.8px', textTransform: 'uppercase', color: '#555', marginBottom: '6px' }}>
+              Reeds uitgegeven
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>
+              €{Math.round(doneCost).toLocaleString()}
+            </div>
           </div>
-          <div style={{ background: '#eaf3de', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>Renovaties</div>
-            <div style={{ fontSize: '20px', fontWeight: '600', color: '#3b6d11' }}>{renovations.length}</div>
+          <div style={{ padding: '16px 20px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.8px', textTransform: 'uppercase', color: '#555', marginBottom: '6px' }}>
+              Nog te maken
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>
+              €{Math.round(plannedCost).toLocaleString()}
+            </div>
           </div>
         </div>
 
+        {/* Rooms */}
         <div className={styles.content}>
-          <div className={styles.formSection}>
-            <h2>Ruimtes & Renovaties</h2>
-            {loading ? <p>Laden...</p> : (
-              <RoomManager
-                rooms={rooms}
-                renovations={renovations}
-                onAddRoom={handleAddRoom}
-                onDeleteRoom={handleDeleteRoom}
-                onAddRenovation={handleAddRenovation}
-                onDeleteRenovation={handleDeleteRenovation}
-              />
-            )}
+          {loading ? (
+            <p style={{ color: '#999' }}>Laden...</p>
+          ) : (
+            <RoomManager
+              rooms={rooms}
+              renovations={renovations}
+              onAddRoom={handleAddRoom}
+              onDeleteRoom={handleDeleteRoom}
+              onRenameRoom={handleRenameRoom}
+              onAddRenovation={handleAddRenovation}
+              onDeleteRenovation={handleDeleteRenovation}
+              onUpdateRenovation={handleUpdateRenovation}
+            />
+          )}
 
-            <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #e0e0e0' }}>
-              <h3 style={{ marginBottom: '12px' }}>Delen met huismate</h3>
-              <form onSubmit={handleShare}>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                  <input
-                    type="email"
-                    value={sharedEmail}
-                    onChange={(e) => setSharedEmail(e.target.value)}
-                    placeholder="huismate@email.com"
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    type="submit"
-                    style={{ backgroundColor: '#639922', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
-                  >
-                    Delen
-                  </button>
-                </div>
-              </form>
-              {shareMessage && <div style={{ fontSize: '13px', color: shareMessage.includes('Fout') ? '#a32d2d' : '#3b6d11' }}>{shareMessage}</div>}
+          {/* Share */}
+          <div style={{ borderTop: '1px solid #e0e0e0', paddingTop: '24px', marginTop: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.8px', textTransform: 'uppercase', color: '#555', marginBottom: '10px' }}>
+              Delen met huismate
             </div>
+            <form onSubmit={handleShare} style={{ display: 'flex', gap: '0' }}>
+              <input
+                type="email"
+                value={sharedEmail}
+                onChange={e => setSharedEmail(e.target.value)}
+                placeholder="huismate@email.com"
+                style={{ flex: 1, borderRight: 'none' }}
+              />
+              <button type="submit" style={{ padding: '8px 20px', background: '#000', color: '#fff', border: '1px solid #000', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                Delen
+              </button>
+            </form>
+            {shareMessage && (
+              <div style={{ fontSize: '12px', marginTop: '8px', color: shareMessage.includes('Fout') ? '#c00' : '#000' }}>
+                {shareMessage}
+              </div>
+            )}
           </div>
         </div>
       </main>

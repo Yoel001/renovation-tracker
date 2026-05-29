@@ -1,64 +1,29 @@
 .container {
   min-height: 100vh;
-  background: #f9f9f9;
+  background: #fff;
 }
 
 .header {
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 20px;
+  border-bottom: 1.5px solid #000;
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .header h1 {
-  margin: 0;
-  font-size: 24px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .main {
-  max-width: 1400px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 30px 20px;
+  padding: 32px 24px;
 }
 
 .content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 24px;
-}
-
-.formSection {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.formSection h2,
-.listSection h2 {
-  font-size: 18px;
-  margin-bottom: 16px;
-  color: #1a1a1a;
-}
-
-.formSection h3 {
-  font-size: 14px;
-  color: #333;
-  margin-top: 0;
-}
-
-.listSection {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-@media (max-width: 768px) {
-  .content {
-    grid-template-columns: 1fr;
-  }
 }
