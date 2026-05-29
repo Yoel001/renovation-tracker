@@ -12,6 +12,7 @@ const STATUS_OPTIONS = ['Gepland', 'In uitvoering', 'Afgerond']
 
 const emptyForm = {
   renovation_type: '',
+  custom_type: '',
   cost: '',
   status: 'Gepland',
   start_date: '',
@@ -19,36 +20,53 @@ const emptyForm = {
   urls: [''],
 }
 
-function Btn({ onClick, children, variant = 'default', style = {} }) {
-  const base = {
-    padding: '7px 14px',
-    border: '1px solid #000',
+const label = (text) => (
+  <label style={{
+    display: 'block',
+    fontFamily: "'DM Mono', monospace",
+    fontSize: '10px',
     fontWeight: '500',
-    fontSize: '12px',
-    cursor: 'pointer',
-    background: variant === 'primary' ? '#000' : '#fff',
-    color: variant === 'primary' ? '#fff' : '#000',
-    ...style,
+    letterSpacing: '0.8px',
+    textTransform: 'uppercase',
+    color: 'var(--ink-muted)',
+    marginBottom: '5px',
+  }}>
+    {text}
+  </label>
+)
+
+function Btn({ onClick, children, variant = 'ghost', style = {}, type = 'button' }) {
+  const variants = {
+    primary: { background: 'var(--ink)', color: '#f2efe6', border: '1px solid var(--ink)', padding: '8px 18px' },
+    ghost: { background: 'transparent', color: 'var(--ink)', border: '1px solid var(--border)', padding: '8px 18px' },
+    danger: { background: 'transparent', color: 'var(--ink-muted)', border: '1px solid var(--border)', padding: '6px 12px' },
+    dashed: { background: 'transparent', color: 'var(--ink-muted)', border: '1px dashed var(--border)', padding: '8px 18px', width: '100%' },
   }
-  return <button onClick={onClick} style={base}>{children}</button>
+  return (
+    <button type={type} onClick={onClick} style={{ ...variants[variant], fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.5px', borderRadius: '2px', cursor: 'pointer', transition: 'opacity 0.15s', ...style }}>
+      {children}
+    </button>
+  )
 }
 
-function Tag({ status }) {
-  const colors = {
-    'Gepland': { bg: '#f0f0f0', color: '#000' },
-    'In uitvoering': { bg: '#000', color: '#fff' },
-    'Afgerond': { bg: '#d4edda', color: '#000' },
+function StatusTag({ status }) {
+  const map = {
+    'Gepland': { bg: 'var(--bg-card)', color: 'var(--ink-muted)' },
+    'In uitvoering': { bg: 'var(--ink)', color: 'var(--bg)' },
+    'Afgerond': { bg: 'var(--green-bg)', color: 'var(--green)' },
   }
-  const c = colors[status] || colors['Gepland']
+  const s = map[status] || map['Gepland']
   return (
     <span style={{
-      background: c.bg,
-      color: c.color,
-      fontSize: '10px',
-      padding: '2px 8px',
-      fontWeight: '600',
-      letterSpacing: '0.5px',
+      background: s.bg,
+      color: s.color,
+      fontFamily: "'DM Mono', monospace",
+      fontSize: '9px',
+      padding: '3px 8px',
+      fontWeight: '500',
+      letterSpacing: '0.8px',
       textTransform: 'uppercase',
+      borderRadius: '2px',
     }}>
       {status}
     </span>
@@ -56,44 +74,41 @@ function Tag({ status }) {
 }
 
 function RenoForm({ initial = emptyForm, onSave, onCancel }) {
-  const [form, setForm] = useState(initial)
-
-  const setField = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  const setUrl = (i, v) => {
-    const urls = [...form.urls]
-    urls[i] = v
-    setField('urls', urls)
-  }
-
-  const addUrl = () => setField('urls', [...form.urls, ''])
-  const removeUrl = (i) => setField('urls', form.urls.filter((_, j) => j !== i))
-
-  const label = (text) => (
-    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '4px', color: '#555' }}>
-      {text}
-    </label>
-  )
+  const [form, setForm] = useState({ ...emptyForm, ...initial, urls: initial.urls?.length ? initial.urls : [''] })
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   return (
-    <div style={{ display: 'grid', gap: '12px' }}>
+    <div style={{ display: 'grid', gap: '16px' }}>
       <div>
         {label('Type werk *')}
-        <select value={form.renovation_type} onChange={e => setField('renovation_type', e.target.value)}>
+        <select value={form.renovation_type} onChange={e => set('renovation_type', e.target.value)}>
           <option value="">— Selecteer —</option>
           {RENO_TYPES.map(t => <option key={t}>{t}</option>)}
         </select>
       </div>
 
+      {form.renovation_type === 'Overig' && (
+        <div>
+          {label('Specificeer het werk *')}
+          <input
+            type="text"
+            placeholder="Bijv. Pergola, Zwembad, Tuinaanleg..."
+            value={form.custom_type}
+            onChange={e => set('custom_type', e.target.value)}
+            autoFocus
+          />
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <div>
           {label('Kosten (€) *')}
           <input type="number" placeholder="0" min="0" step="100"
-            value={form.cost} onChange={e => setField('cost', e.target.value)} />
+            value={form.cost} onChange={e => set('cost', e.target.value)} />
         </div>
         <div>
           {label('Status')}
-          <select value={form.status} onChange={e => setField('status', e.target.value)}>
+          <select value={form.status} onChange={e => set('status', e.target.value)}>
             {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
           </select>
         </div>
@@ -101,34 +116,42 @@ function RenoForm({ initial = emptyForm, onSave, onCancel }) {
 
       <div>
         {label('Datum (optioneel)')}
-        <input type="date" value={form.start_date} onChange={e => setField('start_date', e.target.value)} />
+        <input type="date" value={form.start_date || ''} onChange={e => set('start_date', e.target.value)} />
       </div>
 
       <div>
         {label('Opmerkingen')}
         <textarea placeholder="Details, bijzonderheden..."
-          value={form.notes} onChange={e => setField('notes', e.target.value)}
-          style={{ minHeight: '60px', resize: 'vertical' }} />
+          value={form.notes} onChange={e => set('notes', e.target.value)}
+          style={{ minHeight: '64px', resize: 'vertical' }} />
       </div>
 
       <div>
         {label('Links (materialen / inspiratie)')}
         {form.urls.map((url, i) => (
           <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-            <input type="url" placeholder="https://..." value={url} onChange={e => setUrl(i, e.target.value)} style={{ flex: 1 }} />
+            <input type="url" placeholder="https://..." value={url}
+              onChange={e => {
+                const urls = [...form.urls]; urls[i] = e.target.value
+                set('urls', urls)
+              }} />
             {form.urls.length > 1 && (
-              <button onClick={() => removeUrl(i)} style={{ padding: '7px 10px', border: '1px solid #000', background: '#fff', cursor: 'pointer', fontSize: '14px' }}>✕</button>
+              <button onClick={() => set('urls', form.urls.filter((_, j) => j !== i))}
+                style={{ padding: '8px 12px', background: 'transparent', border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--ink-muted)', borderRadius: '2px' }}>
+                ✕
+              </button>
             )}
           </div>
         ))}
-        <button onClick={addUrl} style={{ fontSize: '11px', padding: '5px 10px', border: '1px dashed #999', background: '#fff', cursor: 'pointer', color: '#555', fontWeight: '500' }}>
-          + Link toevoegen
+        <button onClick={() => set('urls', [...form.urls, ''])}
+          style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', letterSpacing: '0.5px', color: 'var(--ink-muted)', background: 'transparent', border: '1px dashed var(--border)', padding: '5px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+          + link toevoegen
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+      <div style={{ display: 'flex', gap: '8px', paddingTop: '4px', borderTop: '1px solid var(--border)' }}>
         <Btn variant="primary" onClick={() => onSave(form)}>Opslaan</Btn>
-        <Btn onClick={onCancel}>Annuleren</Btn>
+        <Btn variant="ghost" onClick={onCancel}>Annuleren</Btn>
       </div>
     </div>
   )
@@ -144,204 +167,182 @@ export default function RoomManager({ rooms, renovations, onAddRoom, onDeleteRoo
 
   const getRenos = (roomId) => renovations.filter(r => r.room_id === roomId)
 
-  const handleAddRoom = (e) => {
-    e.preventDefault()
-    if (!newRoomName.trim()) return
-    onAddRoom(newRoomName.trim())
-    setNewRoomName('')
-  }
-
-  const handleRenameRoom = (roomId) => {
-    if (!editingRoomName.trim()) return
-    onRenameRoom(roomId, editingRoomName.trim())
-    setEditingRoomId(null)
-    setEditingRoomName('')
-  }
-
-  const handleAddReno = async (roomId, form) => {
-    if (!form.renovation_type || !form.cost) { alert('Vul Type en Bedrag in!'); return }
-    await onAddRenovation(roomId, form)
-    setAddingRenoInRoom(null)
-  }
-
-  const handleUpdateReno = async (renoId, form) => {
-    if (!form.renovation_type || !form.cost) { alert('Vul Type en Bedrag in!'); return }
-    await onUpdateRenovation(renoId, form)
-    setEditingRenoId(null)
-  }
+  const sectionLabel = (num, text) => (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '12px' }}>
+      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: 'var(--ink-faint)', letterSpacing: '0.5px' }}>{num}</span>
+      <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '16px', color: 'var(--ink)' }}>{text}</span>
+    </div>
+  )
 
   return (
     <div style={{ display: 'grid', gap: '0' }}>
       {/* Add Room */}
-      <form onSubmit={handleAddRoom} style={{ display: 'flex', gap: '0', marginBottom: '24px' }}>
-        <input
-          type="text"
-          placeholder="Nieuwe ruimte (bv. Woonkamer, Buitengevel...)"
-          value={newRoomName}
-          onChange={e => setNewRoomName(e.target.value)}
-          style={{ flex: 1, borderRight: 'none' }}
-        />
-        <button type="submit" style={{ padding: '8px 20px', background: '#000', color: '#fff', border: '1px solid #000', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-          + Ruimte
-        </button>
-      </form>
-
-      {rooms.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#999', border: '1px dashed #ccc' }}>
-          Geen ruimtes. Voeg een ruimte toe om te beginnen.
+      <div style={{ marginBottom: '32px' }}>
+        {sectionLabel('01 /', 'Ruimte toevoegen')}
+        <div style={{ display: 'flex', gap: '0' }}>
+          <input
+            type="text"
+            placeholder="Woonkamer, Badkamer, Buitengevel, Terras..."
+            value={newRoomName}
+            onChange={e => setNewRoomName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && newRoomName.trim()) { onAddRoom(newRoomName.trim()); setNewRoomName('') } }}
+            style={{ flex: 1, borderRight: 'none', borderRadius: '2px 0 0 2px' }}
+          />
+          <button
+            onClick={() => { if (newRoomName.trim()) { onAddRoom(newRoomName.trim()); setNewRoomName('') } }}
+            style={{ padding: '9px 20px', background: 'var(--ink)', color: 'var(--bg)', border: '1px solid var(--ink)', fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.5px', cursor: 'pointer', borderRadius: '0 2px 2px 0', whiteSpace: 'nowrap' }}
+          >
+            + Toevoegen
+          </button>
         </div>
-      ) : (
-        <div style={{ border: '1px solid #000' }}>
-          {rooms.map((room, roomIdx) => {
-            const renos = getRenos(room.id)
-            const total = renos.reduce((sum, r) => sum + (parseFloat(r.cost) || 0), 0)
-            const isExpanded = expandedRoom === room.id
-            const isEditingName = editingRoomId === room.id
+      </div>
 
-            return (
-              <div key={room.id} style={{ borderBottom: roomIdx < rooms.length - 1 ? '1px solid #000' : 'none' }}>
-                {/* Room Header */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '14px 16px',
-                  background: isExpanded ? '#f8f8f8' : '#fff',
-                  gap: '12px',
-                }}>
-                  <div
-                    onClick={() => setExpandedRoom(isExpanded ? null : room.id)}
-                    style={{ cursor: 'pointer', fontSize: '10px', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'none', userSelect: 'none' }}
-                  >
-                    ▶
-                  </div>
+      {/* Rooms */}
+      {rooms.length > 0 && (
+        <div>
+          {sectionLabel('02 /', 'Overzicht')}
+          <div style={{ border: '1px solid var(--border)' }}>
+            {rooms.map((room, idx) => {
+              const renos = getRenos(room.id)
+              const total = renos.reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
+              const isExpanded = expandedRoom === room.id
+              const isEditingName = editingRoomId === room.id
 
-                  {isEditingName ? (
-                    <div style={{ flex: 1, display: 'flex', gap: '8px' }}>
-                      <input
-                        value={editingRoomName}
-                        onChange={e => setEditingRoomName(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleRenameRoom(room.id)}
-                        autoFocus
-                        style={{ flex: 1, padding: '4px 8px', fontSize: '14px', fontWeight: '600' }}
-                      />
-                      <Btn variant="primary" onClick={() => handleRenameRoom(room.id)}>✓</Btn>
-                      <Btn onClick={() => setEditingRoomId(null)}>✕</Btn>
-                    </div>
-                  ) : (
-                    <>
-                      <div
-                        onClick={() => setExpandedRoom(isExpanded ? null : room.id)}
-                        style={{ flex: 1, cursor: 'pointer' }}
-                      >
-                        <span style={{ fontWeight: '600', fontSize: '15px' }}>{room.name}</span>
-                        <span style={{ color: '#999', fontSize: '12px', marginLeft: '10px' }}>
-                          {renos.length} renovatie{renos.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <span style={{ fontWeight: '700', fontSize: '15px', marginRight: '16px' }}>
-                        €{Math.round(total).toLocaleString()}
-                      </span>
-                      <Btn onClick={() => { setEditingRoomId(room.id); setEditingRoomName(room.name) }} style={{ fontSize: '11px', padding: '4px 10px' }}>
-                        Naam
-                      </Btn>
-                      <Btn onClick={() => onDeleteRoom(room.id)} style={{ fontSize: '11px', padding: '4px 10px', color: '#999', borderColor: '#ccc' }}>
-                        Verwijder
-                      </Btn>
-                    </>
-                  )}
-                </div>
+              return (
+                <div key={room.id} style={{ borderBottom: idx < rooms.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  {/* Room Header */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '14px 20px',
+                    background: isExpanded ? 'var(--bg-card)' : 'transparent',
+                    gap: '12px',
+                  }}>
+                    <span
+                      onClick={() => setExpandedRoom(isExpanded ? null : room.id)}
+                      style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', color: 'var(--ink-faint)', cursor: 'pointer', transition: 'transform 0.2s', display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'none', userSelect: 'none', width: '12px' }}
+                    >▶</span>
 
-                {/* Expanded Content */}
-                {isExpanded && (
-                  <div style={{ borderTop: '1px solid #e0e0e0', background: '#fafafa', padding: '16px' }}>
-                    {/* Renovations */}
-                    {renos.length > 0 && (
-                      <div style={{ marginBottom: '16px', border: '1px solid #e0e0e0', background: '#fff' }}>
-                        {renos.map((reno, i) => (
-                          <div key={reno.id} style={{ borderBottom: i < renos.length - 1 ? '1px solid #e0e0e0' : 'none', padding: '12px 14px' }}>
-                            {editingRenoId === reno.id ? (
-                              <RenoForm
-                                initial={{
-                                  renovation_type: reno.renovation_type,
-                                  cost: reno.cost,
-                                  status: reno.status,
-                                  start_date: reno.start_date || '',
-                                  notes: reno.notes || '',
-                                  urls: reno.urls?.length ? reno.urls : [''],
-                                }}
-                                onSave={(form) => handleUpdateReno(reno.id, form)}
-                                onCancel={() => setEditingRenoId(null)}
-                              />
-                            ) : (
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                                    <span style={{ fontWeight: '600', fontSize: '13px' }}>{reno.renovation_type}</span>
-                                    <Tag status={reno.status} />
-                                  </div>
-                                  <div style={{ fontSize: '13px', fontWeight: '700', marginBottom: '4px' }}>
-                                    €{Math.round(parseFloat(reno.cost) || 0).toLocaleString()}
-                                  </div>
-                                  {reno.start_date && (
-                                    <div style={{ fontSize: '11px', color: '#666' }}>
-                                      {new Date(reno.start_date).toLocaleDateString('nl-NL')}
-                                    </div>
-                                  )}
-                                  {reno.notes && (
-                                    <div style={{ fontSize: '12px', color: '#555', marginTop: '4px', fontStyle: 'italic' }}>
-                                      {reno.notes}
-                                    </div>
-                                  )}
-                                  {reno.urls?.filter(u => u).length > 0 && (
-                                    <div style={{ marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                      {reno.urls.filter(u => u).map((url, i) => (
-                                        <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-                                          style={{ fontSize: '11px', color: '#000', textDecoration: 'underline', border: '1px solid #ddd', padding: '2px 8px' }}>
-                                          🔗 Link {i + 1}
-                                        </a>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                                <div style={{ display: 'flex', gap: '6px', marginLeft: '12px' }}>
-                                  <Btn onClick={() => setEditingRenoId(reno.id)} style={{ fontSize: '11px', padding: '4px 10px' }}>
-                                    Aanpassen
-                                  </Btn>
-                                  <Btn onClick={() => onDeleteRenovation(reno.id)} style={{ fontSize: '11px', padding: '4px 10px', color: '#999', borderColor: '#ccc' }}>
-                                    ✕
-                                  </Btn>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Add Renovation */}
-                    {addingRenoInRoom === room.id ? (
-                      <div style={{ border: '1px solid #000', padding: '16px', background: '#fff' }}>
-                        <div style={{ fontWeight: '600', fontSize: '12px', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '12px' }}>
-                          Renovatie toevoegen
-                        </div>
-                        <RenoForm
-                          onSave={(form) => handleAddReno(room.id, form)}
-                          onCancel={() => setAddingRenoInRoom(null)}
-                        />
+                    {isEditingName ? (
+                      <div style={{ flex: 1, display: 'flex', gap: '8px' }}>
+                        <input value={editingRoomName} onChange={e => setEditingRoomName(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { onRenameRoom(room.id, editingRoomName); setEditingRoomId(null) } }}
+                          autoFocus style={{ flex: 1, padding: '5px 10px', fontFamily: "'DM Serif Display', serif", fontSize: '15px' }} />
+                        <Btn variant="primary" onClick={() => { onRenameRoom(room.id, editingRoomName); setEditingRoomId(null) }}>✓</Btn>
+                        <Btn onClick={() => setEditingRoomId(null)}>✕</Btn>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setAddingRenoInRoom(room.id)}
-                        style={{ width: '100%', padding: '10px', border: '1px dashed #999', background: '#fff', cursor: 'pointer', fontSize: '12px', fontWeight: '600', color: '#555', letterSpacing: '0.5px' }}
-                      >
-                        + Renovatie toevoegen
-                      </button>
+                      <>
+                        <div onClick={() => setExpandedRoom(isExpanded ? null : room.id)} style={{ flex: 1, cursor: 'pointer' }}>
+                          <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '15px' }}>{room.name}</span>
+                          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: 'var(--ink-faint)', marginLeft: '12px' }}>
+                            {renos.length} item{renos.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '16px', marginRight: '20px' }}>
+                          €{Math.round(total).toLocaleString()}
+                        </span>
+                        <Btn onClick={() => { setEditingRoomId(room.id); setEditingRoomName(room.name) }}>Naam</Btn>
+                        <Btn variant="danger" onClick={() => onDeleteRoom(room.id)} style={{ marginLeft: '6px' }}>Verwijder</Btn>
+                      </>
                     )}
                   </div>
-                )}
-              </div>
-            )
-          })}
+
+                  {/* Expanded */}
+                  {isExpanded && (
+                    <div style={{ borderTop: '1px solid var(--border)', background: '#faf8f3', padding: '20px' }}>
+                      {/* Reno items */}
+                      {renos.length > 0 && (
+                        <div style={{ border: '1px solid var(--border)', marginBottom: '16px', background: 'white' }}>
+                          {renos.map((reno, i) => {
+                            const displayName = reno.renovation_type === 'Overig' && reno.custom_type
+                              ? reno.custom_type
+                              : reno.renovation_type
+
+                            return (
+                              <div key={reno.id} style={{ borderBottom: i < renos.length - 1 ? '1px solid var(--border)' : 'none', padding: '14px 16px' }}>
+                                {editingRenoId === reno.id ? (
+                                  <RenoForm
+                                    initial={{
+                                      renovation_type: reno.renovation_type,
+                                      custom_type: reno.custom_type || '',
+                                      cost: reno.cost,
+                                      status: reno.status,
+                                      start_date: reno.start_date || '',
+                                      notes: reno.notes || '',
+                                      urls: reno.urls?.length ? reno.urls : [''],
+                                    }}
+                                    onSave={(form) => { onUpdateRenovation(reno.id, form); setEditingRenoId(null) }}
+                                    onCancel={() => setEditingRenoId(null)}
+                                  />
+                                ) : (
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '12px' }}>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                                        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '14px' }}>{displayName}</span>
+                                        <StatusTag status={reno.status} />
+                                      </div>
+                                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '13px', marginBottom: '4px' }}>
+                                        €{Math.round(parseFloat(reno.cost) || 0).toLocaleString()}
+                                      </div>
+                                      {reno.start_date && (
+                                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: 'var(--ink-faint)' }}>
+                                          {new Date(reno.start_date).toLocaleDateString('nl-NL')}
+                                        </div>
+                                      )}
+                                      {reno.notes && (
+                                        <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '4px', fontStyle: 'italic' }}>
+                                          {reno.notes}
+                                        </div>
+                                      )}
+                                      {reno.urls?.filter(u => u).length > 0 && (
+                                        <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                          {reno.urls.filter(u => u).map((url, i) => (
+                                            <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                                              style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: 'var(--ink)', border: '1px solid var(--border)', padding: '3px 8px', borderRadius: '2px', textDecoration: 'none', background: 'var(--bg)' }}>
+                                              ↗ Link {i + 1}
+                                            </a>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                      <Btn onClick={() => setEditingRenoId(reno.id)}>Aanpassen</Btn>
+                                      <Btn variant="danger" onClick={() => onDeleteRenovation(reno.id)}>✕</Btn>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Add reno */}
+                      {addingRenoInRoom === room.id ? (
+                        <div style={{ border: '1px solid var(--border)', padding: '20px', background: 'white' }}>
+                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: 'var(--ink-muted)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '16px' }}>
+                            Nieuwe renovatie
+                          </div>
+                          <RenoForm
+                            onSave={(form) => { onAddRenovation(room.id, form); setAddingRenoInRoom(null) }}
+                            onCancel={() => setAddingRenoInRoom(null)}
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setAddingRenoInRoom(room.id)}
+                          style={{ width: '100%', padding: '10px', border: '1px dashed var(--border)', background: 'transparent', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'var(--ink-muted)', letterSpacing: '0.5px', borderRadius: '2px' }}
+                        >
+                          + renovatie toevoegen
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
