@@ -8,13 +8,13 @@ const RENO_TYPES = [
   'Verwarming / Koeling', 'Keuken', 'Badkamer', 'Overig'
 ]
 
-const STATUS_OPTIONS = ['Gepland', 'In uitvoering', 'Afgerond']
+const STATUS_OPTIONS = ['Idee', 'Gepland', 'Uitgevoerd']
 
 const emptyForm = {
   renovation_type: '',
   custom_type: '',
   cost: '',
-  status: 'Gepland',
+  status: 'Idee',
   start_date: '',
   notes: '',
   urls: [''],
@@ -51,9 +51,10 @@ function Btn({ onClick, children, variant = 'ghost', style = {}, type = 'button'
 
 function StatusTag({ status }) {
   const map = {
-    'Gepland': { bg: 'var(--bg-card)', color: 'var(--ink-muted)' },
-    'In uitvoering': { bg: 'var(--ink)', color: 'var(--bg)' },
-    'Afgerond': { bg: 'var(--green-bg)', color: 'var(--green)' },
+    'Idee': { bg: 'var(--bg-card)', color: 'var(--ink-muted)' },
+    'Gepland': { bg: 'var(--ink)', color: 'var(--bg)' },
+    
+    'Uitgevoerd': { bg: 'var(--green-bg)', color: 'var(--green)' },
   }
   const s = map[status] || map['Gepland']
   return (

@@ -96,9 +96,9 @@ export default function Dashboard({ user }) {
     else { setShareMessage(`Gedeeld met ${sharedEmail}!`); setSharedEmail(''); setTimeout(() => setShareMessage(''), 3000) }
   }
 
-  const totalCost = renovations.reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
-  const doneCost = renovations.filter(r => r.status === 'Afgerond').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
-  const plannedCost = renovations.filter(r => r.status !== 'Afgerond').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
+  const totalCost = renovations.filter(r => r.status === 'Gepland').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
+  const doneCost = renovations.filter(r => r.status === 'Uitgevoerd').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
+  const plannedCost = renovations.filter(r => r.status === 'Gepland').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
 
   const mono = { fontFamily: "'DM Mono', monospace" }
   const serif = { fontFamily: "'DM Serif Display', serif" }
