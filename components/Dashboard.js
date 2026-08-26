@@ -133,7 +133,7 @@ export default function Dashboard({ user }) {
         ].map(({ label, value, color }, i) => (
           <div key={i} style={{ padding: '12px 20px', borderRight: i < 2 ? '1px solid #ebebeb' : 'none' }}>
             <div style={{ ...MONO, fontSize: '9px', color: '#ccc', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>{label}</div>
-            <div style={{ fontFamily: 'Inter', fontSize: '20px', fontWeight: '300', color }}}>
+            <div style={{ fontFamily: 'Inter', fontSize: '20px', fontWeight: '300', color }}>
               €{Math.round(value).toLocaleString()}
             </div>
           </div>
