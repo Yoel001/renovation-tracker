@@ -2,6 +2,11 @@
 
 import { useState } from 'react'
 
+const MONO = { fontFamily: "'DM Mono', monospace" }
+const RED = '#8B1A1A'
+const BLUE = '#1B3F8B'
+const YELLOW = '#C8991A'
+
 const RENO_TYPES = [
   'Schilderwerk', 'Elektriciteit', 'Loodgwerk / Water',
   'Vloeren', 'Dakwerk', 'Ramen / Deuren', 'Isolatie',
@@ -10,21 +15,14 @@ const RENO_TYPES = [
 const STATUS_OPTIONS = ['Idee', 'Gepland', 'Uitgevoerd']
 const emptyForm = { renovation_type: '', custom_type: '', cost: '', status: 'Idee', start_date: '', notes: '', urls: [''] }
 
-const mono = { fontFamily: "'DM Mono', monospace" }
-const serif = { fontFamily: "'DM Serif Display', serif" }
+const statusColor = (s) => s === 'Gepland' ? RED : s === 'Uitgevoerd' ? BLUE : YELLOW
 
 function FieldLabel({ text }) {
-  return <label style={{ ...mono, display: 'block', fontSize: '9px', letterSpacing: '0.8px', textTransform: 'uppercase', color: '#888', marginBottom: '5px' }}>{text}</label>
-}
-
-function StatusTag({ status }) {
-  const map = {
-    'Idee':      { bg: '#f0f0f0', color: '#888' },
-    'Gepland':   { bg: '#1a1a18', color: '#f2efe6' },
-    'Uitgevoerd':{ bg: '#e8f0e4', color: '#3a6b2a' },
-  }
-  const s = map[status] || map['Idee']
-  return <span style={{ ...mono, background: s.bg, color: s.color, fontSize: '9px', padding: '3px 8px', letterSpacing: '0.8px', textTransform: 'uppercase', borderRadius: '2px' }}>{status}</span>
+  return (
+    <label style={{ ...MONO, display: 'block', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#bbb', marginBottom: '5px' }}>
+      {text}
+    </label>
+  )
 }
 
 function RenoForm({ initial = emptyForm, onSave, onCancel }) {
@@ -32,7 +30,7 @@ function RenoForm({ initial = emptyForm, onSave, onCancel }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   return (
-    <div style={{ display: 'grid', gap: '14px', padding: '16px', background: 'white', border: '1px solid #e0ddd5', borderRadius: '2px' }}>
+    <div style={{ display: 'grid', gap: '12px', padding: '16px', background: '#fafafa', border: '1px solid #ebebeb' }}>
       <div>
         <FieldLabel text="Type werk *" />
         <select value={form.renovation_type} onChange={e => set('renovation_type', e.target.value)}>
@@ -76,17 +74,27 @@ function RenoForm({ initial = emptyForm, onSave, onCancel }) {
         {form.urls.map((url, i) => (
           <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
             <input type="url" placeholder="https://..." value={url} onChange={e => { const u = [...form.urls]; u[i] = e.target.value; set('urls', u) }} style={{ flex: 1 }} />
-            {form.urls.length > 1 && <button onClick={() => set('urls', form.urls.filter((_, j) => j !== i))} style={{ padding: '6px 10px', background: 'transparent', border: '1px solid #e0ddd5', cursor: 'pointer', color: '#999', borderRadius: '2px' }}>✕</button>}
+            {form.urls.length > 1 && (
+              <button onClick={() => set('urls', form.urls.filter((_, j) => j !== i))}
+                style={{ padding: '6px 10px', background: 'transparent', border: '1px solid #e0e0e0', color: '#ccc' }}>✕</button>
+            )}
           </div>
         ))}
-        <button onClick={() => set('urls', [...form.urls, ''])} style={{ ...mono, fontSize: '10px', color: '#999', background: 'transparent', border: '1px dashed #ccc', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+        <button onClick={() => set('urls', [...form.urls, ''])}
+          style={{ ...MONO, fontSize: '10px', color: '#bbb', background: 'transparent', border: '1px solid #e0e0e0', padding: '4px 10px' }}>
           + link
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', paddingTop: '4px', borderTop: '1px solid #e0ddd5' }}>
-        <button onClick={() => onSave(form)} style={{ ...mono, padding: '8px 18px', background: '#1a1a18', color: '#f2efe6', border: 'none', fontSize: '11px', letterSpacing: '0.5px', cursor: 'pointer', borderRadius: '2px' }}>Opslaan</button>
-        <button onClick={onCancel} style={{ ...mono, padding: '8px 18px', background: 'transparent', border: '1px solid #e0ddd5', fontSize: '11px', letterSpacing: '0.5px', cursor: 'pointer', borderRadius: '2px' }}>Annuleren</button>
+      <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid #ebebeb' }}>
+        <button onClick={() => onSave(form)}
+          style={{ padding: '8px 18px', background: '#1a1916', color: '#fff', border: 'none', fontSize: '12px', fontWeight: '400' }}>
+          Opslaan
+        </button>
+        <button onClick={onCancel}
+          style={{ padding: '8px 18px', background: 'transparent', border: '1px solid #e0e0e0', color: '#999', fontSize: '12px' }}>
+          Annuleren
+        </button>
       </div>
     </div>
   )
@@ -98,49 +106,50 @@ export default function RoomDetail({ room, renovations, onRenameRoom, onDeleteRo
   const [addingReno, setAddingReno] = useState(false)
   const [editingRenoId, setEditingRenoId] = useState(null)
 
-  const totalCost = renovations.filter(r => r.status !== 'Idee').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
-  const doneCost = renovations.filter(r => r.status === 'Uitgevoerd').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
+  const totalGepland = renovations.filter(r => r.status === 'Gepland').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
+  const totalUitgevoerd = renovations.filter(r => r.status === 'Uitgevoerd').reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
 
   return (
     <div>
       {/* Room header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #ebebeb' }}>
         <div>
           {editingName ? (
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <input value={roomName} onChange={e => setRoomName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { onRenameRoom(room.id, roomName); setEditingName(false) } }}
-                autoFocus style={{ ...serif, fontSize: '22px', padding: '4px 8px', background: 'white' }} />
+                autoFocus style={{ fontSize: '18px', fontWeight: '500', padding: '4px 8px' }} />
               <button onClick={() => { onRenameRoom(room.id, roomName); setEditingName(false) }}
-                style={{ ...mono, padding: '6px 12px', background: '#1a1a18', color: '#f2efe6', border: 'none', fontSize: '11px', cursor: 'pointer', borderRadius: '2px' }}>✓</button>
+                style={{ padding: '6px 12px', background: '#1a1916', color: '#fff', border: 'none' }}>✓</button>
               <button onClick={() => setEditingName(false)}
-                style={{ ...mono, padding: '6px 12px', background: 'transparent', border: '1px solid #e0ddd5', fontSize: '11px', cursor: 'pointer', borderRadius: '2px' }}>✕</button>
+                style={{ padding: '6px 12px', background: 'transparent', border: '1px solid #e0e0e0', color: '#999' }}>✕</button>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-              <h2 style={{ ...serif, fontSize: '26px', fontWeight: 'normal', margin: 0 }}>{room.name}</h2>
+              <h2 style={{ fontSize: '18px', fontWeight: '500', color: '#1a1916', margin: 0 }}>{room.name}</h2>
               <button onClick={() => { setEditingName(true); setRoomName(room.name) }}
-                style={{ ...mono, fontSize: '10px', color: '#999', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0', textDecoration: 'underline' }}>
-                naam aanpassen
+                style={{ ...MONO, fontSize: '9px', color: '#bbb', background: 'transparent', border: 'none', textDecoration: 'underline', padding: 0 }}>
+                naam
               </button>
             </div>
           )}
-          <div style={{ ...mono, fontSize: '11px', color: '#aaa', marginTop: '4px' }}>
+          <div style={{ ...MONO, fontSize: '9px', color: '#ccc', marginTop: '4px', letterSpacing: '0.5px' }}>
             {renovations.length} renovatie{renovations.length !== 1 ? 's' : ''}
-            {totalCost > 0 && <span> · €{Math.round(totalCost).toLocaleString()} geraamd · €{Math.round(doneCost).toLocaleString()} uitgevoerd</span>}
+            {totalGepland > 0 && <span style={{ color: RED }}> · €{Math.round(totalGepland).toLocaleString()} gepland</span>}
+            {totalUitgevoerd > 0 && <span style={{ color: BLUE }}> · €{Math.round(totalUitgevoerd).toLocaleString()} uitgevoerd</span>}
           </div>
         </div>
         <button onClick={() => onDeleteRoom(room.id)}
-          style={{ ...mono, fontSize: '10px', color: '#bbb', background: 'transparent', border: '1px solid #e0ddd5', padding: '6px 12px', cursor: 'pointer', borderRadius: '2px' }}>
-          Verwijder ruimte
+          style={{ ...MONO, fontSize: '9px', color: '#ccc', background: 'transparent', border: '1px solid #e8e8e8', padding: '5px 10px' }}>
+          Verwijder
         </button>
       </div>
 
-      {/* Renovations */}
-      <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
+      {/* Renovations list */}
+      <div style={{ marginBottom: '12px' }}>
         {renovations.length === 0 && !addingReno ? (
-          <div style={{ ...mono, fontSize: '12px', color: '#bbb', padding: '24px 0', textAlign: 'center', border: '1px dashed #e0ddd5', borderRadius: '2px' }}>
-            Geen renovaties in deze ruimte
+          <div style={{ ...MONO, fontSize: '11px', color: '#ccc', padding: '20px 0', textAlign: 'center', border: '1px dashed #ebebeb' }}>
+            Geen renovaties
           </div>
         ) : (
           renovations.map(reno => {
@@ -154,31 +163,43 @@ export default function RoomDetail({ room, renovations, onRenameRoom, onDeleteRo
                     onCancel={() => setEditingRenoId(null)}
                   />
                 ) : (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', padding: '14px 16px', background: 'white', border: '1px solid #e0ddd5', borderRadius: '2px' }}>
+                  <div style={{ padding: '10px 0', borderBottom: '1px solid #f2f2f2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                        <span style={{ ...serif, fontSize: '14px' }}>{displayName}</span>
-                        <StatusTag status={reno.status} />
+                      <div style={{ fontSize: '13px', fontWeight: '400', color: reno.status === 'Idee' ? '#bbb' : '#1a1916', marginBottom: '2px' }}>
+                        {displayName}
                       </div>
-                      <div style={{ ...mono, fontSize: '13px', fontWeight: '500', marginBottom: '2px' }}>
-                        €{Math.round(parseFloat(reno.cost) || 0).toLocaleString()}
-                      </div>
-                      {reno.start_date && <div style={{ ...mono, fontSize: '10px', color: '#aaa' }}>{new Date(reno.start_date).toLocaleDateString('nl-NL')}</div>}
-                      {reno.notes && <div style={{ fontSize: '12px', color: '#888', marginTop: '4px', fontStyle: 'italic' }}>{reno.notes}</div>}
+                      {reno.start_date && (
+                        <div style={{ ...MONO, fontSize: '9px', color: '#ccc' }}>
+                          {new Date(reno.start_date).toLocaleDateString('nl-NL')}
+                        </div>
+                      )}
+                      {reno.notes && (
+                        <div style={{ fontSize: '11px', color: '#bbb', marginTop: '2px' }}>{reno.notes}</div>
+                      )}
                       {reno.urls?.filter(u => u).length > 0 && (
-                        <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        <div style={{ marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                           {reno.urls.filter(u => u).map((url, i) => (
                             <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-                              style={{ ...mono, fontSize: '10px', color: '#1a1a18', border: '1px solid #e0ddd5', padding: '2px 8px', borderRadius: '2px', textDecoration: 'none', background: '#faf8f3' }}>
-                              ↗ Link {i + 1}
+                              style={{ ...MONO, fontSize: '9px', color: '#aaa', textDecoration: 'underline' }}>
+                              ↗ link {i + 1}
                             </a>
                           ))}
                         </div>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', marginLeft: '12px' }}>
-                      <button onClick={() => setEditingRenoId(reno.id)} style={{ ...mono, fontSize: '10px', color: '#666', background: 'transparent', border: '1px solid #e0ddd5', padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>Aanpassen</button>
-                      <button onClick={() => onDeleteRenovation(reno.id)} style={{ ...mono, fontSize: '10px', color: '#bbb', background: 'transparent', border: '1px solid #e0ddd5', padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>✕</button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: '16px' }}>
+                      <span style={{ ...MONO, fontSize: '12px', fontWeight: '400', color: reno.status === 'Idee' ? '#ccc' : '#1a1916' }}>
+                        €{Math.round(parseFloat(reno.cost) || 0).toLocaleString()}
+                      </span>
+                      <div style={{ width: '8px', height: '8px', background: statusColor(reno.status), flexShrink: 0 }} title={reno.status} />
+                      <button onClick={() => setEditingRenoId(reno.id)}
+                        style={{ ...MONO, fontSize: '9px', color: '#bbb', background: 'transparent', border: 'none', textDecoration: 'underline', padding: 0 }}>
+                        aanpassen
+                      </button>
+                      <button onClick={() => onDeleteRenovation(reno.id)}
+                        style={{ ...MONO, fontSize: '9px', color: '#ddd', background: 'transparent', border: 'none', padding: 0 }}>
+                        ✕
+                      </button>
                     </div>
                   </div>
                 )}
@@ -188,19 +209,31 @@ export default function RoomDetail({ room, renovations, onRenameRoom, onDeleteRo
         )}
 
         {addingReno && (
-          <RenoForm
-            onSave={(form) => { onAddRenovation(room.id, form); setAddingReno(false) }}
-            onCancel={() => setAddingReno(false)}
-          />
+          <div style={{ marginTop: '8px' }}>
+            <RenoForm
+              onSave={(form) => { onAddRenovation(room.id, form); setAddingReno(false) }}
+              onCancel={() => setAddingReno(false)}
+            />
+          </div>
         )}
       </div>
 
       {!addingReno && (
         <button onClick={() => setAddingReno(true)}
-          style={{ ...mono, width: '100%', padding: '10px', background: 'transparent', border: '1px dashed #ccc', cursor: 'pointer', fontSize: '11px', color: '#999', letterSpacing: '0.5px', borderRadius: '2px' }}>
+          style={{ ...MONO, fontSize: '10px', color: '#bbb', background: 'transparent', border: '1px dashed #e0e0e0', padding: '8px 0', width: '100%', letterSpacing: '0.5px' }}>
           + renovatie toevoegen
         </button>
       )}
+
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: '16px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #f2f2f2' }}>
+        {[['Idee', YELLOW], ['Gepland', RED], ['Uitgevoerd', BLUE]].map(([label, color]) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '7px', height: '7px', background: color }} />
+            <span style={{ ...MONO, fontSize: '9px', color: '#bbb', letterSpacing: '0.5px' }}>{label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
